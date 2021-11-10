@@ -1,0 +1,79 @@
+Dragon Ball's AMT&AMB Container file Structure
+-----------------------------
+
+#AMB
+{
+
+Header
+---------
+
+Offset - Value - Type
+----------------------
+0 - "#AMB" - MAGIC(UINT32)
+4 - Header Size(0x20 normally) - UInt32
+8 - UNK(NUll?) - UINT32
+0xC - Version? - UINT32
+0x10 - FileCount(entries count) - UINT32
+0x14 - Header Size again?(0x20 normally) - UINT32
+0x18 - Complete #AMB header Size - UINT32
+0x1C - UNK(Null?) - UINT32
+...
+
+Entry List
+-----------
+Entry Structure
+
+0x10 Bytes entry pointers
+
+0 - FileOffset - UINT32
+4 - FileSize - UINT32
+8 - Unk(maybe inside container filecount) - UINT32
+0xC - Null? - UINT32
+}
+
+#AMT(Base struct by SusmuelDBZMA&M)
+{
+
+Header
+---------
+
+Offset - Value - Type
+----------------------
+0 - "#AMT" - MAGIC(UINT32)
+4 - Header Size(0x20 normally) - UInt32
+8 - UNK(NUll?) - UINT32
+0xC - Version? - UINT32
+0x10 - TextureCount/TXBlockCount(entries count) - UINT32
+0x14 - Header Size again?(0x20 normally) - UINT32
+0x18 - Unk(Null?) - UINT32
+0x1C - UNK(Null?) - UINT32
+...
+
+Texture Blocks Offsets
+-----------------------
+Uint32 - offset
+Some of these can be NULL, bypass them.
+
+TX Blocks(0x30 bytes size)
+-------------
+
+0 - Índice - UINT32
+4 - Unk(0x21) - UINT32
+8 - Unk(0x14) - UINT32
+
+0xC - Unk(Tex[] Index?) - UINT16
+0xE - Unk(Palette[] Index?) - UINT16
+
+0x10 - Width - UINT16
+0x12 - Height - UINT16
+
+0x14 - Tex[] Offset - UINT32
+0x18 - Tex[] Size(+0x20 to header included) - UINT32
+
+0x1C - Unk(Palette count?) - UINT32
+0x20 - Unk(Null?) - UINT32
+
+0x24 - Pal[] Offset - UINT32
+0x28 - Pal[] Size(+0x20 to header included) - UINT32
+0x2C - Some kind of ID?(0xFFB8) - UINT32
+}
