@@ -137,7 +137,12 @@ namespace AMB_AMT_Manipulator
                             int i = 0;
                             foreach (var texture in intern.Textures)
                             {
-                                texture.GetPNG().Save(saveamtp + "AMT_" + i.ToString() + ".png");
+                                string saveng = saveamtp + texture.texinfo.Bpp + "Bpp";
+                                if (!Directory.Exists(saveng))
+                                    Directory.CreateDirectory(saveng);
+                                saveng += @"\";
+
+                                texture.GetPNG().Save(saveng + "AMT_" + i.ToString() + ".png");
                                 i++;
                             }
                         }
@@ -185,7 +190,18 @@ namespace AMB_AMT_Manipulator
                     int i = 0;
                     foreach (var texture in amtx.Textures)
                     {
-                        amtx.SetfromPNG(Image.FromFile(amtfolder + "AMT_" + i.ToString() + ".png"), i);
+                        string path = amtfolder + texture.texinfo.Bpp + "Bpp" + @"\";
+                        Image im = Image.FromFile(amtfolder + "AMT_" + i.ToString() + ".png");
+                        if (amtx.SetfromPNG(im, i))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            im.Dispose();
+                            break;
+                        }
+                        im.Dispose();
                         i++;
                     }
                     #region ProgressBar
@@ -286,7 +302,14 @@ namespace AMB_AMT_Manipulator
                     foreach (var dir in Directory.EnumerateDirectories(openpack))
                     {
                         string pathpack = dir + @"\";
-                        Budokai.AMB.RemakeContainer(pathpack, savepath+Path.GetFileName(dir)+".bin", true);
+                        if (Budokai.AMB.RemakeContainer(pathpack, savepath + Path.GetFileName(dir) + ".bin", true))
+                            continue;
+                        else
+                        {
+                            progress.Dispose();
+                            Console.Clear();
+                            BackMenu();
+                        }
                         #region ProgressBar
                         progress.Report((double)pro / Directory.EnumerateDirectories(openpack).Count());
                         Thread.Sleep(20);

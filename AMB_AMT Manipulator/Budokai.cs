@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Drawing;
+//using nQuant;
 using Rainbow.ImgLib.Encoding;
+using System.Windows.Forms;
 using static Naruto_CCS_Text_Editor.Bin;
 
 //Budokai Class and struct by Bit.Raiden
@@ -103,11 +105,16 @@ namespace AMB_AMT_Manipulator
 
                         if (!Directory.Exists(amtpatj))
                             Directory.CreateDirectory(amtpatj);
-
+                        amtpatj += @"\";
                         int index = 0;
                         foreach (var tex in amtx.Textures)
                         {
-                            tex.GetPNG().Save(amtpatj + @"\texture_" + index.ToString() + ".png");
+                            string saveng = amtpatj + tex.texinfo.Bpp + "Bpp";
+                            if (!Directory.Exists(saveng))
+                                Directory.CreateDirectory(saveng);
+                            saveng += @"\";
+
+                            tex.GetPNG().Save(saveng + @"\texture_" + index.ToString() + ".png");
                             index++;
                         }
                     }
@@ -121,13 +128,13 @@ namespace AMB_AMT_Manipulator
                 File.WriteAllBytes(savefolder + "pack.amb", Section);//AMB Section for repack
                 File.WriteAllText(savefolder+"filelist.txt", sb.ToString());//AMB filelist
             }
-            public static void RemakeContainer(string openfolder, string savepath, bool repackamts = false)
+            public static bool RemakeContainer(string openfolder, string savepath, bool repackamts = false)
             {
                 DirectoryInfo info = new DirectoryInfo(openfolder);
                 string name = info.Name;
 
                 if (Directory.EnumerateFiles(openfolder).Count() == 0)
-                    return;//Error
+                    return false;//Error
 
                 var outFile = new List<byte>();
                 var outAMB = new List<byte>();
@@ -148,10 +155,18 @@ namespace AMB_AMT_Manipulator
                         {
                             string amtpath = openfolder + "AMT_" + i.ToString() + @"\";
                             AMT remount = new AMT(filex);
-                            for(int p =0;p<remount.TextureCount;p++)
+                            for(int p =0;p<remount.TextureCount;)
                             {
-                                var png = Image.FromFile(amtpath + "texture_" + p.ToString()+".png");
-                                remount.SetfromPNG(png, p);
+                                string path = amtpath + remount.Textures[p].texinfo.Bpp + "Bpp" + @"\";
+                                var png = Image.FromFile(path + "texture_" + p.ToString()+".png");
+                                if (remount.SetfromPNG(png, p))
+                                    p++;
+                                else
+                                {
+                                    png.Dispose();
+                                    return false;
+                                }
+                                png.Dispose();
                             }
                             filex = remount.AMTB;//Re-packed AMT
                         }
@@ -168,6 +183,7 @@ namespace AMB_AMT_Manipulator
                 outFile.AddRange(AMB);
                 outFile.AddRange(outAMB.ToArray());
                 File.WriteAllBytes(savepath, outFile.ToArray());//Save output
+                return true;
             }
         }
         public class AMT
@@ -225,13 +241,16 @@ namespace AMB_AMT_Manipulator
                 }
                 #endregion
             }
-            public void SetfromPNG(Image input, int index)
+            public bool SetfromPNG(Image input, int index, bool nquant=false)
             {
+                //var quant = new WuQuantizer();
                 var tex = Textures[index];
                 var colors = new HashSet<Color>();
                 byte[] coresbyte;
                 Color[] cores;
                 Bitmap bit = new Bitmap(input);
+                //if (nquant)
+                   // bit = new Bitmap(quant.QuantizeImage(bit, 10, 70, tex.Clt.Length / 4));
                 bit.RotateFlip(RotateFlipType.Rotate180FlipX);
                 int colorcount = 0;
                 #region Obter cores no eixo cartesiano 2D        
@@ -242,15 +261,24 @@ namespace AMB_AMT_Manipulator
                         colors.Add(bit.GetPixel(x, y));
                     }
                 }
+                colorcount = colors.ToArray().Length;
+                #region Calcular quantia de cores
+                if (colorcount <= 256)
+                    colorcount = 256;
+                else if (colorcount <= 16)
+                    colorcount = 16;
+                else
+                {
+                    MessageBox.Show("The image has too much colors!\n" +
+                    "Expected: " + (tex.texinfo.PalArraySize/4).ToString() + " Colors, " + tex.texinfo.Bpp.ToString() + " Bpp\n" +
+                    "Got: " + colorcount.ToString() + " Colors, " + bit.PixelFormat.ToString() + "\n\n" +
+                    "Please use Photoshop or OptipixIMGStudio to reduce colors and try again!", "There's something wrong...");
+                    return false;
+                }
                 cores = new Color[256];
                 Array.Copy(colors.ToArray(), 0, cores, 0, colors.Count);
                 if (tex.Interleave)
                     cores = Texture.swizzlePalette(cores);
-                #region Calcular quantia de cores
-                if (cores.Length <= 256)
-                    colorcount = 256;
-                else if (cores.Length <= 16)
-                    colorcount = 16;
                 #endregion
                 #region Separar cores para array
                 coresbyte = new byte[colorcount * 4];//1024 bytes = 256 cores
@@ -297,6 +325,7 @@ namespace AMB_AMT_Manipulator
 
                 Array.Copy(tex.Tex, 0, AMTB, tex.texinfo.TexArrayOffset + 0x20, tex.texinfo.TexArraySize);//Tex array
                 Array.Copy(tex.Clt, 0, AMTB, tex.texinfo.PalArrayOffset + 0x20, tex.texinfo.PalArraySize);//Palette array
+                return true;
             }
             public class TexBlock
             {
