@@ -17,7 +17,7 @@ namespace AMB_AMT_Manipulator
         {
             Console.WriteLine("AMT/AMB Manipulation Tool\n" +
                 "Bit.Raiden 2021\n" +
-                "Version 1.0\n" +
+                "Version 1.5\n" +
                 "Base AMB and AMT struct by SusmuelDBZMA&M\n\n" +
                 "Choose a operation:\n\n" +
                 "1 - Extract AMT's Textures\n" +
